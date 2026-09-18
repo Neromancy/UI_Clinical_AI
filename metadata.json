@@ -1,0 +1,6 @@
+{
+  "name": "AI-Clinical Misconception System - UI/UX Specification & Interactive System",
+  "description": "Comprehensive UI/UX specification, component library, and interactive prototype for the AI-Clinical Misconception System covering P1–P9 workflows, multi-role portals, and validation gates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
