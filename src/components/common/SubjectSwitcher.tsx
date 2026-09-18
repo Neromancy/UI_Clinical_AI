@@ -57,7 +57,7 @@ export const SubjectSwitcher: React.FC<SubjectSwitcherProps> = ({
             </span>
             <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
               <ShieldCheck className="w-3 h-3" />
-              Isolated Scopes
+              Isolated Data
             </span>
           </div>
 
@@ -92,7 +92,7 @@ export const SubjectSwitcher: React.FC<SubjectSwitcherProps> = ({
           </div>
 
           <div className="mt-2 pt-2 border-t border-slate-100 px-2 text-[10px] text-slate-400 leading-tight">
-            Cross-subject retrieval is blocked at SQL and vector layers.
+            Student questions and learning materials are isolated to this subject.
           </div>
         </div>
       )}

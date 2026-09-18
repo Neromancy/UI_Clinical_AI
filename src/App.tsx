@@ -26,6 +26,9 @@ import { AuditTrailDrawer } from './components/common/AuditTrailDrawer';
 // Spec Viewer
 import { SpecViewer } from './components/spec/SpecViewer';
 
+// QA Validation Suite View
+import { QAValidationSuiteView } from './components/views/qa/QAValidationSuiteView';
+
 // Student Views
 import { StudentDashboardView } from './components/views/student/StudentDashboardView';
 import { StudentAnswerView } from './components/views/student/StudentAnswerView';
@@ -59,29 +62,11 @@ import { AdminSystemView } from './components/views/admin/AdminSystemView';
 import { ResearcherCrossSubjectView } from './components/views/researcher/ResearcherCrossSubjectView';
 
 // Icons
-import {
-  Stethoscope,
-  BookOpen,
-  Sparkles,
-  History,
-  FileText,
-  UserCheck,
-  FileSpreadsheet,
-  AlertTriangle,
-  Upload,
-  PieChart,
-  Server,
-  BarChart3,
-  Menu,
-  Search,
-  Bell,
-  CheckCircle2,
-  FileCheck2,
-} from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 export default function App() {
-  // Global Application Mode: Specification Document vs Interactive Prototype
-  const [appMode, setAppMode] = useState<'specification' | 'prototype'>('prototype');
+  // Global Application Mode: Interactive Prototype vs QA Validation Suite vs Specification Document
+  const [appMode, setAppMode] = useState<'specification' | 'prototype' | 'qa_suite'>('prototype');
 
   // Active Role and Subject Context
   const [currentRole, setCurrentRole] = useState<Role>('lecturer');
@@ -431,13 +416,77 @@ export default function App() {
     );
   };
 
+  // Switch role and update view defaults
+  const handleRoleChange = (role: Role) => {
+    setCurrentRole(role);
+    if (role === 'student') setActiveStudentScreen('dashboard');
+    if (role === 'lecturer') setActiveLecturerScreen('validation');
+    if (role === 'admin') setActiveAdminScreen('system');
+    if (role === 'researcher') setActiveLecturerScreen('cross_subject');
+  };
+
+  // Breadcrumb title for active screen in prototype mode
+  const getScreenTitle = () => {
+    if (currentRole === 'lecturer' || currentRole === 'researcher') {
+      switch (activeLecturerScreen) {
+        case 'dashboard':
+          return 'Overview';
+        case 'validation':
+          return selectedSubmission ? 'Submission Review' : 'Awaiting Review';
+        case 'editor':
+          return 'Question Sets';
+        case 'kb':
+          return 'Learning Materials';
+        case 'misconceptions':
+          return 'Misconceptions';
+        case 'profiles':
+          return 'Student Progress';
+        case 'cross_subject':
+          return 'Subject Comparison';
+        case 'exports':
+          return 'Export Data';
+        default:
+          return 'Overview';
+      }
+    }
+    if (currentRole === 'student') {
+      switch (activeStudentScreen) {
+        case 'dashboard':
+          return 'Overview';
+        case 'answer':
+          return 'Case Studies';
+        case 'feedback':
+          return 'Feedback';
+        default:
+          return 'Overview';
+      }
+    }
+    if (currentRole === 'admin') {
+      switch (activeAdminScreen) {
+        case 'system':
+          return 'System Overview';
+        case 'subjects':
+          return 'Subjects & Access';
+        case 'tiers':
+          return 'Performance Levels';
+        case 'audit':
+          return 'Activity Log';
+        case 'anomalies':
+          return 'Flagged Submissions';
+        default:
+          return 'System Overview';
+      }
+    }
+    return '';
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex font-sans text-slate-900 overflow-x-hidden">
       {/* Sidebar Navigation - Persists across all prototype views */}
       {appMode === 'prototype' && (
         <SidebarNavigation
           currentRole={currentRole}
-          onSelectRole={setCurrentRole}
+          onSelectRole={handleRoleChange}
           activeSubject={activeSubject}
           pendingValidationCount={
             subjectSubmissions.filter((s) => s.status === 'PENDING_VALIDATION').length
@@ -465,18 +514,19 @@ export default function App() {
 
       {/* Main Right Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 h-16 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
-          {/* Left: Mobile Toggle + Subject Switcher + Search */}
-          <div className="flex items-center gap-2 sm:gap-3">
+        {/* Clean Top Header Bar */}
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 h-14 flex items-center justify-between gap-4 shrink-0 shadow-2xs">
+          {/* Left: Mobile Toggle + Subject Context & Breadcrumb */}
+          <div className="flex items-center gap-2.5 min-w-0">
             {appMode === 'prototype' && (
               <button
                 type="button"
                 onClick={() => setIsMobileNavOpen(true)}
-                className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden shrink-0"
                 title="Open Navigation Menu"
+                aria-label="Open Navigation Menu"
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-4 h-4" />
               </button>
             )}
 
@@ -487,117 +537,92 @@ export default function App() {
               onSelectSubject={setActiveSubject}
             />
 
-            {/* Quick Search */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/70 text-slate-400 hover:border-slate-300 text-xs cursor-pointer">
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-slate-400">Search student, case, diagnosis...</span>
-              <kbd className="ml-2 px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-400">
-                ⌘K
-              </kbd>
-            </div>
+            {/* Breadcrumb Screen Context */}
+            {appMode === 'prototype' && (
+              <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 min-w-0">
+                <span>/</span>
+                <span className="font-medium text-slate-700 truncate">
+                  {getScreenTitle()}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Center Mode Switcher */}
-          <div className="hidden md:flex items-center p-1 bg-slate-100 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setAppMode('specification')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                appMode === 'specification'
-                  ? 'bg-white text-indigo-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Full UI/UX Specification</span>
-            </button>
+          {/* Right: Clean Mode Switcher & Compact Role Switcher */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Mode Switcher */}
+            <nav className="flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200/60 text-xs">
+              <button
+                type="button"
+                onClick={() => setAppMode('prototype')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  appMode === 'prototype'
+                    ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 font-medium'
+                }`}
+              >
+                Prototype
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setAppMode('prototype')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                appMode === 'prototype'
-                  ? 'bg-white text-indigo-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Interactive System Prototype</span>
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setAppMode('qa_suite')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  appMode === 'qa_suite'
+                    ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 font-medium'
+                }`}
+              >
+                QA Suite
+              </button>
 
-          {/* Right Controls: Role Switcher, Pending Pill, Notifications, User Profile */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Role Switcher */}
-            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAppMode('specification')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  appMode === 'specification'
+                    ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 font-medium'
+                }`}
+              >
+                Specification
+              </button>
+            </nav>
+
+            {/* Compact Role Switcher */}
+            <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
               <select
                 value={currentRole}
-                onChange={(e) => {
-                  const r = e.target.value as Role;
-                  setCurrentRole(r);
-                  if (r === 'student') setActiveStudentScreen('dashboard');
-                  if (r === 'lecturer') setActiveLecturerScreen('validation');
-                  if (r === 'admin') setActiveAdminScreen('system');
-                  if (r === 'researcher') setActiveLecturerScreen('cross_subject');
-                }}
-                className="py-1.5 pl-2.5 pr-7 text-xs font-semibold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 capitalize cursor-pointer shadow-2xs"
+                onChange={(e) => handleRoleChange(e.target.value as Role)}
+                className="py-1 pl-2 pr-6 text-xs font-semibold rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer"
                 title="Switch Active Role"
+                aria-label="Switch Active Role"
               >
-                <option value="lecturer">Lecturer / Evaluator</option>
-                <option value="student">Student (Elena Rostova)</option>
-                <option value="researcher">Clinical Researcher</option>
-                <option value="admin">System Administrator</option>
+                <option value="lecturer">Lecturer</option>
+                <option value="student">Student</option>
+                <option value="researcher">Researcher</option>
+                <option value="admin">Admin</option>
               </select>
-            </div>
 
-            {/* Awaiting Review Count Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentRole('lecturer');
-                setActiveLecturerScreen('validation');
-                setActiveSubmissionId(undefined);
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold hover:bg-rose-100 transition-colors shadow-2xs"
-              title="Open Submissions Awaiting Review"
-            >
-              <FileCheck2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>
-                {subjectSubmissions.filter((s) => s.status === 'PENDING_VALIDATION').length} Awaiting Review
-              </span>
-            </button>
-
-            {/* Activity Log Button */}
-            <button
-              type="button"
-              onClick={() => setIsAuditDrawerOpen(true)}
-              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 relative transition-colors shadow-2xs"
-              title="Activity Log"
-            >
-              <Bell className="w-4 h-4 text-slate-600" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
-            </button>
-
-            {/* User Profile Pill (Dr. Evelyn Vance, MD) */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                {currentRole === 'student' ? 'ER' : currentRole === 'admin' ? 'AD' : 'EV'}
-              </div>
-              <div className="hidden xl:flex flex-col text-left">
-                <span className="text-xs font-bold text-slate-900 leading-tight">
-                  {currentRole === 'student'
-                    ? 'Elena Rostova'
+              <div
+                className="w-7 h-7 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs"
+                title={
+                  currentRole === 'student'
+                    ? 'Elena Rostova (Student)'
                     : currentRole === 'admin'
-                    ? 'SysAdmin Root'
-                    : 'Dr. Evelyn Vance, MD'}
-                </span>
-                <span className="text-[10px] text-slate-400 leading-tight">
-                  {currentRole === 'student'
-                    ? 'Clinical Year 3 Student'
-                    : currentRole === 'admin'
-                    ? 'Security & Platform Officer'
-                    : 'Clinical Faculty & Senior Validator'}
-                </span>
+                    ? 'SysAdmin Root (Administrator)'
+                    : currentRole === 'researcher'
+                    ? 'Dr. Marcus Reed (Researcher)'
+                    : 'Dr. Evelyn Vance (Lecturer)'
+                }
+              >
+                {currentRole === 'student'
+                  ? 'ER'
+                  : currentRole === 'admin'
+                  ? 'AD'
+                  : currentRole === 'researcher'
+                  ? 'MR'
+                  : 'EV'}
               </div>
             </div>
           </div>
@@ -605,6 +630,9 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 w-full p-4 sm:p-6 overflow-y-auto">
+        {/* MODE C: QA VALIDATION SUITE & TEST ENGINE */}
+        {appMode === 'qa_suite' && <QAValidationSuiteView />}
+
         {/* MODE A: FULL SPECIFICATION DOCUMENT READER */}
         {appMode === 'specification' && (
           <SpecViewer

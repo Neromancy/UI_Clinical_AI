@@ -83,6 +83,7 @@ interface NavSectionConfig {
 
 export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   currentRole,
+  onSelectRole,
   activeSubject,
   pendingValidationCount,
   activeLecturerScreen,
@@ -102,6 +103,39 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isCollapsed =
     controlledIsCollapsed !== undefined ? controlledIsCollapsed : internalCollapsed;
+
+  // Active user profile based on role
+  const getUserProfile = () => {
+    switch (currentRole) {
+      case 'student':
+        return {
+          name: 'Elena Rostova',
+          roleTitle: 'Student (Year 3)',
+          initials: 'ER',
+        };
+      case 'admin':
+        return {
+          name: 'SysAdmin Root',
+          roleTitle: 'Administrator',
+          initials: 'AD',
+        };
+      case 'researcher':
+        return {
+          name: 'Dr. Marcus Reed',
+          roleTitle: 'Clinical Researcher',
+          initials: 'MR',
+        };
+      case 'lecturer':
+      default:
+        return {
+          name: 'Dr. Evelyn Vance',
+          roleTitle: 'Clinical Faculty',
+          initials: 'EV',
+        };
+    }
+  };
+
+  const userProfile = getUserProfile();
 
   const handleToggleCollapse = () => {
     if (onToggleCollapse) {
@@ -550,32 +584,53 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
           </div>
         </div>
 
-        {/* Bottom Status Box */}
-        <div className="p-2 border-t border-slate-200 bg-slate-50/50 shrink-0">
+        {/* User Profile & Role Selector Footer */}
+        <div className="p-2.5 border-t border-slate-200 bg-slate-50/70 shrink-0">
           {isCollapsed ? (
-            <div
-              className="flex items-center justify-center p-2 rounded-lg text-slate-500 hover:bg-slate-100 cursor-default"
-              title="System Status: Operational"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onSelectRole) {
+                    const roles: Role[] = ['lecturer', 'student', 'researcher', 'admin'];
+                    const next = roles[(roles.indexOf(currentRole) + 1) % roles.length];
+                    onSelectRole(next);
+                  }
+                }}
+                className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center hover:ring-2 hover:ring-indigo-500 transition-all cursor-pointer shadow-xs"
+                title={`${userProfile.name} (${userProfile.roleTitle}) - Click to switch role`}
+                aria-label="Switch active role"
+              >
+                {userProfile.initials}
+              </button>
             </div>
           ) : (
-            <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="font-medium text-slate-700 truncate">
-                  System Operational
-                </span>
+            <div className="flex items-center gap-2.5 p-1 rounded-lg">
+              <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                {userProfile.initials}
               </div>
-              <span className="text-[11px] text-slate-400 font-mono shrink-0">
-                Online
-              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-slate-900 truncate">
+                  {userProfile.name}
+                </div>
+                {onSelectRole ? (
+                  <select
+                    value={currentRole}
+                    onChange={(e) => onSelectRole(e.target.value as Role)}
+                    className="text-[11px] text-slate-500 font-medium bg-transparent border-0 p-0 focus:ring-0 cursor-pointer hover:text-slate-900 w-full truncate"
+                    title="Change Role"
+                  >
+                    <option value="lecturer">Lecturer / Evaluator</option>
+                    <option value="student">Student (Elena Rostova)</option>
+                    <option value="researcher">Clinical Researcher</option>
+                    <option value="admin">System Administrator</option>
+                  </select>
+                ) : (
+                  <div className="text-[11px] text-slate-500 truncate">
+                    {userProfile.roleTitle}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
